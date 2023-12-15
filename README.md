@@ -20,7 +20,7 @@ There are many ways to integrate with automation. The most functional (in my opi
 - Updating staff information
 - Monotonous support tasks to free up Help Desk staff
 
-This project will use the following technologies3:
+This project will use the following technologies:
 - GitHub Actions
 - TeXXmo IoT Wifi Button
 - PowerShell 7.2
@@ -75,7 +75,7 @@ This project will use the following technologies3:
 
 > These backend steps just need to be run once in order to setup the automation infrastructure. 
 
-- Once the initial setup is complete, go into your GitHub account > your forked repo > Actions > click on **Deploy Backend Security VM Infrastructure**. Click on the **Run Workflow** button on the right and select **Run Workflow**. This will create all of the backend resources for you. 
+- Once the initial setup is complete, go into your GitHub account > your forked repo > Actions > click on [Deploy Backend Security VM Infrastructure](https://github.com/CityHallin/azure_cityhallin_secvm/actions/workflows/secvm_backend_deployment.yml). Click on the **Run Workflow** button on the right and select **Run Workflow**. This will create all of the backend resources for you. 
 The Deploy Backend Security VM Infrastructure GitHub Action will take about 4-6 minutes to run and complete setting up all of the needed backend infrastructure. 
 
 <img src="./readme_files/backend_cicd.png" width="800px">
@@ -100,8 +100,8 @@ The Deploy Backend Security VM Infrastructure GitHub Action will take about 4-6 
 - Once the IoT button device is configured with your Azure IoT Hub information, we are ready to build our security VM from the literal push of a button.
     - Click the IoT button which will use your Wifi and send an HTTP event to the Azure IoT Hub. 
     - The Azure Function App will be monitoring an event service on the IoT Hub. Once it sees a new event from the IoT device, that will trigger the Azure Function. 
-    - The Azure Function checks the claim password sent by the IoT device is correct and then sends a webhook to the **Deploy Security VM** GitHub Action in your forked GitHub repo.
-    - The **Deploy Security VM** GitHub Action uses Terraform and Ansible to deploy the VM, configures the VM and an Azure Bastion service to remotely access the VM. 
+    - The Azure Function checks the claim password sent by the IoT device is correct and then sends a webhook to the [Deploy Security VM](https://github.com/CityHallin/azure_cityhallin_secvm/actions/workflows/secvm_deployment1.yml) GitHub Action in your forked GitHub repo.
+    - The Deploy Security VM GitHub Action uses Terraform and Ansible to deploy the VM, configures the VM and an Azure Bastion service to remotely access the VM. 
 
 - Since this is using Infrastructure as code (IaC), any future button clicks will just enforce everything for the VM is configured correctly via [Idempotence](https://learn.microsoft.com/en-us/devops/deliver/what-is-infrastructure-as-code#avoid-manual-configuration-to-enforce-consistency). If nothing needs to change, the automation does not do anything. 
 
