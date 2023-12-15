@@ -1,0 +1,96 @@
+name: "Deploy Security VM"
+
+on:
+  workflow_dispatch:
+  repository_dispatch:
+    types: [azure_function_trigger]
+  push:
+    branches:
+      - '*release*'
+      - '*qa*'
+
+jobs:
+
+  secvm-deploy:
+    name: "secvm-deployment"
+    env:
+      ARM_CLIENT_ID: ${{ secrets.ENTRA_CLIENT_ID }}
+      ARM_CLIENT_SECRET: ${{ secrets.ENTRA_CLIENT_SECRET }}
+      ARM_SUBSCRIPTION_ID: ${{ secrets.AZURE_SUBSCRIPTION_ID }}
+      ARM_TENANT_ID: ${{ secrets.ENTRA_TENANT_ID}} 
+    runs-on: ubuntu-latest
+    defaults:
+      run:
+        shell: bash
+
+    steps:
+      - name: "Checkout Repo"
+        uses: actions/checkout@v2
+
+      - name: "Get Runner IP"
+        id: runner_ip
+        uses: haythem/public-ip@v1.3
+
+      - name: "Install Terraform"
+        uses: hashicorp/setup-terraform@v2
+        with:
+          terraform_version: latest
+          terraform_wrapper: false
+
+      - name: "Terraform Init"
+        id: init
+        run: |
+          cd ./3-vm_deployment/terraform
+          terraform init \
+            -input=false \
+            -backend-config="resource_group_name=${{ secrets.TERRAFORM_SA_RG_NAME }}" \
+            -backend-config="storage_account_name=${{ secrets.TERRAFORM_SA_NAME }}" \
+            -backend-config="container_name=${{ secrets.TERRAFORM_SA_CONTAINER_NAME }}" \
+            -backend-config="key=${{ vars.PROJECT }}-vm.tfstate"
+
+      - name: "Terraform Validate"
+        id: validate
+        run: |
+          cd ./3-vm_deployment/terraform
+          terraform validate -no-color
+
+      - name: "Terraform Plan"
+        id: plan
+        run: |
+          cd ./3-vm_deployment/terraform
+          terraform plan \
+            -out=tfplan \
+            -input=false \
+            -var="vm_username=${{ secrets.VM_USERNAME }}" \
+            -var="vm_password=${{ secrets.VM_PASSWORD }}" \
+            -var="project=${{ vars.PROJECT }}" \
+            -var="runner_ip_address=${{ steps.runner_ip.outputs.ipv4 }}" \
+            -var="region=${{ vars.REGION }}"
+          
+      - name: "Terraform Apply"
+        id: apply
+        run: |
+          cd ./3-vm_deployment/terraform
+          terraform apply -input=false tfplan
+
+      - name: "Terraform Outputs"
+        id: output
+        run: |
+          cd ./3-vm_deployment/terraform
+          echo "ip=$(terraform output vm_pip)" >> $GITHUB_ENV
+      
+      - name: "Set up Python 3 for Ansible"
+        uses: actions/setup-python@v1
+        with:
+          python-version: 3.8
+
+      - name: "Install Ansible and Dependencies"
+        run: |
+          pip install --upgrade pip
+          pip install ansible requests
+          pip install pywinrm
+
+      - name: "Run Ansible Playbook"
+        run: |
+          ansible-playbook -i ${{ env.ip }}, ./3-vm_deployment/ansible/site.yml -e "ansible_password=${{ secrets.VM_PASSWORD }} ansible_user=${{ secrets.VM_USERNAME }}"
+    

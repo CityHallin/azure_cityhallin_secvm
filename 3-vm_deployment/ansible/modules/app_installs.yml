@@ -1,0 +1,14 @@
+
+---
+#Notepad++
+- name: Download Notepad++
+  win_get_url:
+    url: https://github.com/notepad-plus-plus/notepad-plus-plus/releases/download/v8.6/npp.8.6.Installer.x64.exe
+    dest: C:\apps
+
+- name: Install Notepad++
+  win_package:
+    path: C:\apps\npp.8.6.Installer.x64.exe
+    product_id: 'Notepad++'
+    arguments: /S
+    state: present

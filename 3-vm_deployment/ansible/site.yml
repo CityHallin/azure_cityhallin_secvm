@@ -1,0 +1,23 @@
+
+---
+- hosts: all
+  become_method: runas
+  vars:
+    ansible_connection: winrm
+    ansible_port: 5986
+    ansible_winrm_transport: ntlm
+    ansible_winrm_server_cert_validation: ignore
+
+  tasks:
+  #General OS Configs
+  - name: General OS Configs
+    import_tasks: ./modules/general.yml
+
+  - name: Folders
+    import_tasks: ./modules/folders.yml
+
+  - name: App Installs
+    import_tasks: ./modules/app_installs.yml
+
+
+ 

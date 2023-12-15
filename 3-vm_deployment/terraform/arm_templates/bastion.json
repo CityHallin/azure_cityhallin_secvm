@@ -1,0 +1,39 @@
+{
+    "$schema": "http://schema.management.azure.com/schemas/2015-01-01/deploymentTemplate.json#",
+    "contentVersion": "1.0.0.0",
+    "parameters": {
+        "location": {
+            "type": "String"
+        },
+        "resourceGroup": {
+            "type": "String"
+        },
+        "bastionHostName": {
+            "type": "String"
+        },
+        "vnetId": {
+            "type": "String"
+        },
+        "bastionHostSku": {
+            "type": "String"
+        }
+    },
+    "resources": [
+        {
+            "apiVersion": "2022-09-01",
+            "type": "Microsoft.Network/bastionHosts",
+            "name": "[parameters('bastionHostName')]",
+            "sku": {
+                "name": "[parameters('bastionHostSku')]"
+            },
+            "location": "[parameters('location')]",
+            "dependsOn": [],
+            "properties": {
+                "virtualNetwork": {
+                    "id": "[parameters('vnetId')]"
+                }
+            },
+            "tags": {}
+        }
+    ]
+}

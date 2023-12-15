@@ -1,0 +1,6 @@
+
+---
+#Timezone
+- name: Time Zone
+  win_timezone:
+    timezone: Mountain Standard Time

@@ -1,0 +1,7 @@
+
+---
+#Folders
+- name: Create App Folder
+  win_file:
+    path: C:\apps
+    state: directory

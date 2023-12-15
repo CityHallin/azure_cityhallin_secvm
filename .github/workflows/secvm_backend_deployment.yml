@@ -1,0 +1,72 @@
+name: "Deploy Backend Security VM Infrastructure"
+
+on:
+  workflow_dispatch:
+  push:
+    branches:
+      - '*release*'
+      - '*qa*'
+
+jobs:
+  backend:
+    name: "backend-deployment"
+    env:
+      ARM_CLIENT_ID: ${{ secrets.ENTRA_CLIENT_ID }}
+      ARM_CLIENT_SECRET: ${{ secrets.ENTRA_CLIENT_SECRET }}
+      ARM_SUBSCRIPTION_ID: ${{ secrets.AZURE_SUBSCRIPTION_ID }}
+      ARM_TENANT_ID: ${{ secrets.ENTRA_TENANT_ID}} 
+    runs-on: ubuntu-latest
+    defaults:
+      run:
+        shell: bash
+
+    steps:
+      - name: "Checkout Repo"
+        uses: actions/checkout@v2
+
+      - name: "Install Terraform"
+        uses: hashicorp/setup-terraform@v2
+        with:
+          terraform_version: latest
+          terraform_wrapper: false
+
+      - name: "Terraform Init"
+        id: init
+        run: |
+          cd ./2-infra_deployment/terraform
+          terraform init \
+            -input=false \
+            -backend-config="resource_group_name=${{ secrets.TERRAFORM_SA_RG_NAME }}" \
+            -backend-config="storage_account_name=${{ secrets.TERRAFORM_SA_NAME }}" \
+            -backend-config="container_name=${{ secrets.TERRAFORM_SA_CONTAINER_NAME }}" \
+            -backend-config="key=${{ vars.PROJECT }}-backend.tfstate"
+
+      - name: "Terraform Validate"
+        id: validate
+        run: |
+          cd ./2-infra_deployment/terraform
+          terraform validate -no-color
+
+      - name: "Terraform Plan"
+        id: plan
+        run: |
+          cd ./2-infra_deployment/terraform
+          terraform plan \
+            -out=tfplan \
+            -input=false \
+            -var="spn_client_id=${{ secrets.ENTRA_CLIENT_ID }}" \
+            -var="spn_client_secret=${{ secrets.ENTRA_CLIENT_SECRET }}" \
+            -var="project=${{ vars.PROJECT }}" \
+            -var="region=${{ vars.REGION }}" \
+            -var="backend_resource_group_name=${{ secrets.TERRAFORM_SA_RG_NAME }}" \
+            -var="backend_storage_account_name=${{ secrets.TERRAFORM_SA_NAME }}" \
+            -var="github_owner=${{ github.repository_owner }}" \
+            -var="github_repo_name=${{ github.event.repository.name }}" \
+            -var="kv_github_pat=${{ secrets.GH_PAT }}" \
+            -var="kv_iot_claim=${{ secrets.IOT_CLAIM }}"
+          
+      - name: "Terraform Apply"
+        id: apply
+        run: |
+          cd ./2-infra_deployment/terraform
+          terraform apply -input=false tfplan 
